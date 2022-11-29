@@ -1,8 +1,10 @@
 import tkinter as tk
 from tkinter import *
 from tkinter import filedialog, Text
-import os
+import openpyxl
+from openpyxl import load_workbook
 from PIL import Image, ImageTk
+
 
 # =================================MAIN=================================
 # Main Window Layout
@@ -11,6 +13,9 @@ root.resizable(width=0, height=0)
 defaultbg = root.cget('bg')
 canvas = tk.Canvas(root, height=600, width=1250, bg='white')
 canvas.grid()
+wb = load_workbook('D:/Hesham/HBKU/RA/Rertina/TestData.xlsx')
+ws = wb.active
+col = ws["H"]
 
 # ENTRIES
 PhotoEntry = Text(canvas, width=30, height=10, font='Helvetica 16', bg=defaultbg)
@@ -36,9 +41,18 @@ CommentsEntry.insert(INSERT, "Doctor's Comments:")
 #CommentsEntry.config(state="disabled")
 #CommentsEntry.bind("<Button-1>", click)
 
-DsummaryEntry = Text(canvas, width=35, height=19, font='Helvetica 16', bg='light grey')
-DsummaryEntry.place(x=820, y=60)
+GTruthEntry = Text(canvas, width=35, height=6, font='Helvetica 16', bg='light grey')
+GTruthEntry.place(x=800, y=50)
+GTruthEntry.config(state="disabled")
+
+DsummaryEntry = Text(canvas, width=35, height=6, font='Helvetica 16', bg='light grey')
+DsummaryEntry.place(x=800, y=205)
 DsummaryEntry.config(state="disabled")
+
+StatisticsEntry = Text(canvas, width=35, height=6, font='Helvetica 16', bg='light grey')
+StatisticsEntry.place(x=800, y=360)
+StatisticsEntry.config(state="disabled")
+
 
 # labels
 DiagnosisLable = tk.Label(canvas, text='Diagnosis', font='Helvetica 16', bg='white')
@@ -47,35 +61,29 @@ DiagnosisLable.place(x=350, y=15)
 DiagnosisLable = tk.Label(canvas, text='Diagnose:', font='Helvetica 16')
 DiagnosisLable.place(x=26, y=405)
 
-l1 = tk.Label(canvas, text='Diagnosis Summary:', font='Helvetica 16', bg='light grey')
-l1.place(x=830, y=65)
+l1 = tk.Label(canvas, text='Model'"'"'s Prediction', font='Helvetica 16', bg='light grey')
+l1.place(x=830, y=215)
 
 l2 = tk.Label(canvas, text='Evaluation', font='Helvetica 16', bg= 'white')
 l2.place(x=950, y=10)
 
-DrDiagLable = tk.Label(canvas, text='-  Doctor'"'"f's Diagnosis:', font='Helvetica 16',
-                       bg='light grey')
-DrDiagLable.place(x=830, y=100)
+ModelPredLable = tk.Label(canvas, text='-  Model'"'"'s Diagnosis: Diabetic (76.3%)', font='Helvetica 16', bg='light grey')
+ModelPredLable.place(x=830, y=245)
 
-ModelPredLable = tk.Label(canvas, text='-  Model'"'"'s Diagnosis: Diabetic (76.3%)', font='Helvetica 16',
-                          bg='light grey')
-ModelPredLable.place(x=830, y=130)
-
-GroundTruthData = tk.Label(canvas, text='-  Actual Diagnosis: Diabetic', font='Helvetica 16',
-                           bg='light grey')
-GroundTruthData.place(x=830, y=160)
+GroundTruthData = tk.Label(canvas, text='-  Actual Diagnosis: Diabetic', font='Helvetica 16', bg='light grey')
+GroundTruthData.place(x=830, y=275)
 
 l2 = tk.Label(canvas, text='Doctor'"'"'s Statistics:', font='Helvetica 16', bg='light grey')
-l2.place(x=830, y=255)
+l2.place(x=830, y=370)
 
 l3 = tk.Label(canvas, text='-  Number of evaluated cases: 5', font='Helvetica 16', bg='light grey')
-l3.place(x=830, y=295)
+l3.place(x=830, y=400)
 
 l4 = tk.Label(canvas, text='-  Number of correct diagnosis: 4', font='Helvetica 16', bg='light grey')
-l4.place(x=830, y=325)
+l4.place(x=830, y=430)
 
 l5 = tk.Label(canvas, text='-  Number of incorrect diagnosis: 1', font='Helvetica 16', bg='light grey')
-l5.place(x=830, y=355)
+l5.place(x=830, y=460)
 # =================================BUTTONS=================================
 # buttons
 Uploadbtn = tk.Button(canvas, text='Upload', font=('Helvetica 16', 15), command=lambda: upload_file(), bg='#6495ED', fg='white', width=10, height=2)
@@ -112,6 +120,17 @@ def upload_file():
     e1.place(x=19, y=46)
     e1.image = img
     e1['image'] = img  # garbage collection
+    Photoname = filename.split('.')
+    Photoname = Photoname[0].split('/')
+    Photoname = Photoname[-1].split()[0]
+    print(Photoname)
+    list = []
+    for x in col:
+        if Photoname == x.value:
+           RowData = ws[x.row]
+           for cell in RowData:
+               list.insert(END,"cell.value")
+    print(list)
 
 
 def diagnose():
