@@ -31,7 +31,6 @@ CommentsEntry = Text(canvas, width=35, height=6, font='Helvetica 16', bg='light 
 CommentsEntry.place(x=170, y=440)
 CommentsEntry.insert(INSERT, "Doctor's Comments:")
 
-
 GTruthEntry = Text(canvas, width=35, height=6, font='Helvetica 16', bg='light grey')
 GTruthEntry.place(x=800, y=50)
 GTruthEntry.config(state="disabled")
@@ -78,21 +77,20 @@ l5.place(x=815, y=460)
 # =================================BUTTONS=================================
 # buttons
 
-#Global Data
+# Global Data
 ImgPath = ''
-
-
 
 Uploadbtn = tk.Button(canvas, text='Upload', font=('Helvetica 16', 15), command=lambda: upload_file(), bg='#6495ED',
                       fg='white', width=10, height=2)
 Uploadbtn.place(x=140, y=315)
-Cropbtn = tk.Button(canvas, text='Crop', font=('Helvetica 16', 15) ,command=lambda: CropImg(ImgPath),bg='#6495ED', fg='white', width=10, height=2)
+Cropbtn = tk.Button(canvas, text='Crop', font=('Helvetica 16', 15), command=lambda: CropImg(ImgPath), bg='#6495ED',
+                    fg='white', width=10, height=2)
 Cropbtn.place(x=525, y=315)
 SDbtn = tk.Button(canvas, text='SubmitDiagnosis', font=('Helvetica 16', 12), bg='#6495ED', fg='white', width=13,
                   height=3)
 SDbtn.place(x=620, y=440)
-DRbtn = tk.Button(canvas, text='DiagnosisReport', font=('Helvetica 16', 12),
-                  bg='#6495ED', fg='white', width=13, height=3)
+DRbtn = tk.Button(canvas, text='DiagnosisReport', font=('Helvetica 16', 12), bg='#6495ED', fg='white', width=13,
+                  height=3)
 DRbtn.place(x=620, y=520)
 PDFbtn = tk.Button(canvas, text='Generate PDF', font=('Helvetica 16', 12), bg='#6495ED', fg='white', width=13, height=3)
 PDFbtn.place(x=1100, y=530)
@@ -128,9 +126,13 @@ def upload_file():
     GenerateGroundTruth(HcNo)
     ImgPath = filename
 
+
 def GenerateGroundTruth(HcNo):
+    # Allocating Data and filtering it
     Data = df.loc[df.HCnumber == HcNo]
     DataFiltered = np.array(Data.get(['Gender', 'Age', 'Nationality', 'HCnumber', 'Diagnosis']))
+
+    # Data Generation and Placement
     GTruthEntry = Text(canvas, width=35, height=6, font='Helvetica 16', bg='light grey')
     GTruthEntry.place(x=800, y=50)
     GroundTruth = tk.Label(canvas, text=f'Gender: {DataFiltered[0][0]}', font='Helvetica 16', bg='light grey')
@@ -144,9 +146,17 @@ def GenerateGroundTruth(HcNo):
     GroundTruth = tk.Label(canvas, text=f'Diagnosis: {DataFiltered[0][4]}', font='Helvetica 16', bg='light grey')
     GroundTruth.place(x=815, y=165)
 
+
 def CropImg(ImgPath):
     # Load image, convert to grayscale, and find edges
     image = cv.imread(ImgPath)
+
+    # Resize
+    scale_percent = 25  # percent of original size
+    width = int(image.shape[1] * scale_percent / 100)
+    height = int(image.shape[0] * scale_percent / 100)
+    dim = (width, height)
+    image = cv.resize(image, dim, interpolation=cv.INTER_AREA)
     gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
     thresh = cv.threshold(gray, 0, 255, cv.THRESH_OTSU + cv.THRESH_BINARY)[1]
 
@@ -160,7 +170,7 @@ def CropImg(ImgPath):
         x, y, w, h = cv.boundingRect(c)
         ROI = image[y:y + h, x:x + w]
         break
-
+    print(ROI.shape)
     cv.imshow('ROI', ROI)
     cv.imwrite('ROI222.png', ROI)
     cv.waitKey()
