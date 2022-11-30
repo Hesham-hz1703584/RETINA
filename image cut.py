@@ -1,20 +1,21 @@
 import cv2
-import numpy as np
 
-cv2.namedWindow("output", cv2.WINDOW_NORMAL)  # Create window with freedom of dimensions
-image = cv2.imread('D:/Hesham/HBKU/RA/Rertina/Hesham_Test_ImData_Anant-20221128T151617Z-001/Hesham_Test_ImData_Anant/HC00015029 G2 OD.jpg')
-output = image.copy()
-img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-# Find circles
-circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1.3, 100)
-# If some circle is found
-if circles is not None:
-   # Get the (x, y, r) as integers
-   circles = np.round(circles[0, :]).astype("int")
-   print(circles)
-   # loop over the circles
-   for (x, y, r) in circles:
-      cv2.circle(output, (x, y), r, (0, 255, 0), 2)
-# show the output image
-cv2.imshow("circle",output)
-cv2.waitKey(0)
+# Load image, convert to grayscale, and find edges
+image = cv2.imread('D:/Hesham/HBKU/RA/Rertina/Hesham_Test_ImData_Anant-20221128T151617Z-001/Hesham_Test_ImData_Anant/HBK000229000001_Retinal_Left_1.jpg')
+gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU + cv2.THRESH_BINARY)[1]
+
+# Find contour and sort by contour area
+cnts = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+cnts = sorted(cnts, key=cv2.contourArea, reverse=True)
+
+# Find bounding box and extract ROI
+for c in cnts:
+    x,y,w,h = cv2.boundingRect(c)
+    ROI = image[y:y+h, x:x+w]
+    break
+
+cv2.imshow('ROI',ROI)
+cv2.imwrite('ROI222.png',ROI)
+cv2.waitKey()

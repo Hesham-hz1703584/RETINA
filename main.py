@@ -93,7 +93,7 @@ l5.place(x=815, y=460)
 Uploadbtn = tk.Button(canvas, text='Upload', font=('Helvetica 16', 15), command=lambda: upload_file(), bg='#6495ED',
                       fg='white', width=10, height=2)
 Uploadbtn.place(x=140, y=315)
-Cropbtn = tk.Button(canvas, text='Crop', font=('Helvetica 16', 15), command=lambda: RetinaDetiction(imge) ,bg='#6495ED', fg='white', width=10, height=2)
+Cropbtn = tk.Button(canvas, text='Crop', font=('Helvetica 16', 15) ,bg='#6495ED', fg='white', width=10, height=2)
 Cropbtn.place(x=525, y=315)
 SDbtn = tk.Button(canvas, text='SubmitDiagnosis', font=('Helvetica 16', 12), bg='#6495ED', fg='white', width=13,
                   height=3)
@@ -132,30 +132,7 @@ def upload_file():
     HcNo = HcNo[0].split('/')
     HcNo = HcNo[-1].split()[0]
     GenerateGroundTruth(HcNo)
-
-    image = cv.imread(filename)
-    output = image.copy()
-    img = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-    # Find circles
-    circles = cv.HoughCircles(img, cv.HOUGH_GRADIENT, 1.3, 100)
-    # If some circle is found
-    if circles is not None:
-        # Get the (x, y, r) as integers
-        circles = np.round(circles[0, :]).astype("int")
-        print(circles)
-        # loop over the circles
-        for (x, y, r) in circles:
-            cv.circle(output, (x, y), r, (0, 255, 0), 2)
-    # show the output image
-    cv.imshow("circle", output)
-    cv.waitKey(0)
-
-
-    RetinaDetiction(filename)
-
-
-
-
+    #CropImg(filename)
 
 def GenerateGroundTruth(HcNo):
     Data = df.loc[df.HCnumber == HcNo]
@@ -173,8 +150,22 @@ def GenerateGroundTruth(HcNo):
     GroundTruth = tk.Label(canvas, text=f'Diagnosis: {DataFiltered[0][4]}', font='Helvetica 16', bg='light grey')
     GroundTruth.place(x=815, y=165)
 
-def RetinaDetiction(ImgPath):
-    print(ImgPath)
-
+def CropImg(ImgPath):
+    image = cv.imread(ImgPath)
+    output = image.copy()
+    img = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+    # Find circles
+    circles = cv.HoughCircles(img, cv.HOUGH_GRADIENT, 1.3, 100)
+    # If some circle is found
+    if circles is not None:
+        # Get the (x, y, r) as integers
+        circles = np.round(circles[0, :]).astype("int")
+        print(circles)
+        # loop over the circles
+        for (x, y, r) in circles:
+            cv.circle(output, (x, y), r, (0, 255, 0), 2)
+    # show the output image
+    cv.imshow("circle", output)
+    cv.waitKey(0)
 # =================================CALLING ROOT=================================
 root.mainloop()
