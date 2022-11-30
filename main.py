@@ -14,12 +14,6 @@ defaultbg = root.cget('bg')
 canvas = tk.Canvas(root, height=600, width=1250, bg='white')
 canvas.grid()
 df = pd.read_csv('D:/Hesham/HBKU/RA/Rertina/TestData.csv', delimiter=';')
-
-#Global Data
-
-
-
-
 # ENTRIES
 PhotoEntry = Text(canvas, width=30, height=10, font='Helvetica 16', bg=defaultbg)
 PhotoEntry.place(x=20, y=50)
@@ -33,17 +27,10 @@ DiagnosisEntry = Text(canvas, width=62, height=8, font='Helvetica 16', bg=defaul
 DiagnosisEntry.place(x=20, y=400)
 DiagnosisEntry.config(state="disabled")
 
-
-def click(event):
-    CommentsEntry.config(state=NORMAL)
-    CommentsEntry.delete('1.0', END)
-
-
 CommentsEntry = Text(canvas, width=35, height=6, font='Helvetica 16', bg='light grey', borderwidth=2, border=2)
 CommentsEntry.place(x=170, y=440)
 CommentsEntry.insert(INSERT, "Doctor's Comments:")
-# CommentsEntry.config(state="disabled")
-# CommentsEntry.bind("<Button-1>", click)
+
 
 GTruthEntry = Text(canvas, width=35, height=6, font='Helvetica 16', bg='light grey')
 GTruthEntry.place(x=800, y=50)
@@ -90,15 +77,21 @@ l5 = tk.Label(canvas, text='-  Number of incorrect diagnosis: 1', font='Helvetic
 l5.place(x=815, y=460)
 # =================================BUTTONS=================================
 # buttons
+
+#Global Data
+ImgPath = ''
+
+
+
 Uploadbtn = tk.Button(canvas, text='Upload', font=('Helvetica 16', 15), command=lambda: upload_file(), bg='#6495ED',
                       fg='white', width=10, height=2)
 Uploadbtn.place(x=140, y=315)
-Cropbtn = tk.Button(canvas, text='Crop', font=('Helvetica 16', 15) ,bg='#6495ED', fg='white', width=10, height=2)
+Cropbtn = tk.Button(canvas, text='Crop', font=('Helvetica 16', 15) ,command=lambda: CropImg(ImgPath),bg='#6495ED', fg='white', width=10, height=2)
 Cropbtn.place(x=525, y=315)
 SDbtn = tk.Button(canvas, text='SubmitDiagnosis', font=('Helvetica 16', 12), bg='#6495ED', fg='white', width=13,
                   height=3)
 SDbtn.place(x=620, y=440)
-DRbtn = tk.Button(canvas, text='DiagnosisReport', font=('Helvetica 16', 12), command=lambda: evaluation_tab(var.get()),
+DRbtn = tk.Button(canvas, text='DiagnosisReport', font=('Helvetica 16', 12),
                   bg='#6495ED', fg='white', width=13, height=3)
 DRbtn.place(x=620, y=520)
 PDFbtn = tk.Button(canvas, text='Generate PDF', font=('Helvetica 16', 12), bg='#6495ED', fg='white', width=13, height=3)
@@ -118,6 +111,7 @@ Radiobutton(root, text="NORMAL", font=('Helvetica 16', 15), variable=var, value=
 # =================================FUNCTIONS=================================
 # Upload_file
 def upload_file():
+    global ImgPath
     f_types = [('Jpg Files', '*.jpg'), ('PNG Files', '*.png')]  # type of files to select
     filename = tk.filedialog.askopenfilename(filetypes=f_types)
     img = Image.open(filename)  # read the image file
@@ -132,7 +126,7 @@ def upload_file():
     HcNo = HcNo[0].split('/')
     HcNo = HcNo[-1].split()[0]
     GenerateGroundTruth(HcNo)
-    #CropImg(filename)
+    ImgPath = filename
 
 def GenerateGroundTruth(HcNo):
     Data = df.loc[df.HCnumber == HcNo]
@@ -151,21 +145,26 @@ def GenerateGroundTruth(HcNo):
     GroundTruth.place(x=815, y=165)
 
 def CropImg(ImgPath):
+    # Load image, convert to grayscale, and find edges
     image = cv.imread(ImgPath)
-    output = image.copy()
-    img = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-    # Find circles
-    circles = cv.HoughCircles(img, cv.HOUGH_GRADIENT, 1.3, 100)
-    # If some circle is found
-    if circles is not None:
-        # Get the (x, y, r) as integers
-        circles = np.round(circles[0, :]).astype("int")
-        print(circles)
-        # loop over the circles
-        for (x, y, r) in circles:
-            cv.circle(output, (x, y), r, (0, 255, 0), 2)
-    # show the output image
-    cv.imshow("circle", output)
-    cv.waitKey(0)
+    gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+    thresh = cv.threshold(gray, 0, 255, cv.THRESH_OTSU + cv.THRESH_BINARY)[1]
+
+    # Find contour and sort by contour area
+    cnts = cv.findContours(thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+    cnts = sorted(cnts, key=cv.contourArea, reverse=True)
+
+    # Find bounding box and extract ROI
+    for c in cnts:
+        x, y, w, h = cv.boundingRect(c)
+        ROI = image[y:y + h, x:x + w]
+        break
+
+    cv.imshow('ROI', ROI)
+    cv.imwrite('ROI222.png', ROI)
+    cv.waitKey()
+
+
 # =================================CALLING ROOT=================================
 root.mainloop()
