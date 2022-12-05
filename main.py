@@ -13,23 +13,19 @@ root.resizable(width=0, height=0)
 defaultbg = root.cget('bg')
 canvas = tk.Canvas(root, height=600, width=1250, bg='white')
 canvas.grid()
-df = pd.read_csv('D:/Hesham/HBKU/RA/Rertina/TestData.csv', delimiter=';')
+df = pd.read_csv('G:/HBKU/Work/TestData.csv', delimiter=';')
+
+# global data
+DataFiltered = np.array(0)
+
 # ENTRIES
 PhotoEntry = Text(canvas, width=30, height=10, font='Helvetica 16', bg=defaultbg)
 PhotoEntry.place(x=20, y=50)
 PhotoEntry.config(state="disabled")
 
-CroppedPhoto = Text(canvas, width=30, height=10, font='Helvetica 16', bg=defaultbg)
-CroppedPhoto.place(x=400, y=50)
+CroppedPhoto = Text(canvas, width=21, height=10, font='Helvetica 16', bg=defaultbg)
+CroppedPhoto.place(x=460, y=50)
 CroppedPhoto.config(state="disabled")
-
-DiagnosisEntry = Text(canvas, width=62, height=8, font='Helvetica 16', bg=defaultbg)
-DiagnosisEntry.place(x=20, y=400)
-DiagnosisEntry.config(state="disabled")
-
-CommentsEntry = Text(canvas, width=35, height=6, font='Helvetica 16', bg='light grey', borderwidth=2, border=2)
-CommentsEntry.place(x=170, y=440)
-CommentsEntry.insert(INSERT, "Doctor's Comments:")
 
 GTruthEntry = Text(canvas, width=35, height=6, font='Helvetica 16', bg='light grey')
 GTruthEntry.place(x=800, y=50)
@@ -43,6 +39,13 @@ StatisticsEntry = Text(canvas, width=35, height=6, font='Helvetica 16', bg='ligh
 StatisticsEntry.place(x=800, y=360)
 StatisticsEntry.config(state="disabled")
 
+DiagnosisEntry = Text(canvas, width=62, height=8, font='Helvetica 16', bg=defaultbg)
+DiagnosisEntry.place(x=20, y=400)
+DiagnosisEntry.config(state="disabled")
+
+CommentsEntry = Text(canvas, width=35, height=6, font='Helvetica 16', bg='light grey', borderwidth=2, border=2)
+CommentsEntry.place(x=170, y=440)
+CommentsEntry.insert(INSERT, "Doctor's Comments:")
 # labels
 DiagnosisLable = tk.Label(canvas, text='Diagnosis', font='Helvetica 16', bg='white')
 DiagnosisLable.place(x=350, y=15)
@@ -50,18 +53,11 @@ DiagnosisLable.place(x=350, y=15)
 DiagnosisLable = tk.Label(canvas, text='Diagnose:', font='Helvetica 16')
 DiagnosisLable.place(x=26, y=405)
 
-l1 = tk.Label(canvas, text='Model'"'"'s Prediction', font='Helvetica 16', bg='light grey')
-l1.place(x=815, y=215)
+l1 = tk.Label(canvas, text='Diagnosis', font='Helvetica 16', bg='light grey')
+l1.place(x=950, y=215)
 
 l2 = tk.Label(canvas, text='Evaluation', font='Helvetica 16', bg='white')
 l2.place(x=950, y=10)
-
-ModelPredLable = tk.Label(canvas, text='-  Model'"'"'s Diagnosis: Diabetic (76.3%)', font='Helvetica 16',
-                          bg='light grey')
-ModelPredLable.place(x=815, y=245)
-
-GroundTruthData = tk.Label(canvas, text='-  Actual Diagnosis: Diabetic', font='Helvetica 16', bg='light grey')
-GroundTruthData.place(x=815, y=275)
 
 l2 = tk.Label(canvas, text='Doctor'"'"'s Statistics:', font='Helvetica 16', bg='light grey')
 l2.place(x=815, y=370)
@@ -86,8 +82,9 @@ Uploadbtn.place(x=140, y=315)
 Cropbtn = tk.Button(canvas, text='Crop', font=('Helvetica 16', 15), command=lambda: CropImg(ImgPath), bg='#6495ED',
                     fg='white', width=10, height=2)
 Cropbtn.place(x=525, y=315)
-SDbtn = tk.Button(canvas, text='SubmitDiagnosis', font=('Helvetica 16', 12), bg='#6495ED', fg='white', width=13,
-                  height=3)
+SDbtn = tk.Button(canvas, text='SubmitDiagnosis', font=('Helvetica 16', 12), command=lambda: SubmitDiagnosis(var.get()),
+                  bg='#6495ED',
+                  fg='white', width=13, height=3)
 SDbtn.place(x=620, y=440)
 DRbtn = tk.Button(canvas, text='DiagnosisReport', font=('Helvetica 16', 12), bg='#6495ED', fg='white', width=13,
                   height=3)
@@ -100,16 +97,20 @@ Radiobutton(root, text="DIABETIC", font=('Helvetica 16', 15), variable=var, valu
 Radiobutton(root, text="NORMAL", font=('Helvetica 16', 15), variable=var, value=2).place(x=35, y=480)
 
 
-# if (value == 1):
-# value = "Diabetic"
-
-# if (value == 2):
-# value = "Normal"
-
 # =================================FUNCTIONS=================================
 # Upload_file
 def upload_file():
     global ImgPath
+
+    # Cleaning Data
+    DsummaryEntry.config(state="normal")
+    DsummaryEntry.delete("1.0", "end")
+    DsummaryEntry.config(state="disabled")
+    GTruthEntry.config(state="normal")
+    GTruthEntry.delete("1.0", "end")
+    GTruthEntry.config(state="disabled")
+
+    # Choosing Photo
     f_types = [('Jpg Files', '*.jpg'), ('PNG Files', '*.png')]  # type of files to select
     filename = tk.filedialog.askopenfilename(filetypes=f_types)
     img = Image.open(filename)  # read the image file
@@ -128,23 +129,19 @@ def upload_file():
 
 
 def GenerateGroundTruth(HcNo):
+    global DataFiltered
     # Allocating Data and filtering it
     Data = df.loc[df.HCnumber == HcNo]
-    DataFiltered = np.array(Data.get(['Gender', 'Age', 'Nationality', 'HCnumber', 'Diagnosis']))
+    DataFiltered = np.array(Data.get(['Gender', 'Age', 'Nationality', 'Group', 'HCnumber', 'Diagnosis']))
 
     # Data Generation and Placement
-    GTruthEntry = Text(canvas, width=35, height=6, font='Helvetica 16', bg='light grey')
-    GTruthEntry.place(x=800, y=50)
-    GroundTruth = tk.Label(canvas, text=f'Gender: {DataFiltered[0][0]}', font='Helvetica 16', bg='light grey')
-    GroundTruth.place(x=815, y=55)
-    GroundTruth = tk.Label(canvas, text=f'Age: {DataFiltered[0][1]}', font='Helvetica 16', bg='light grey')
-    GroundTruth.place(x=815, y=82)
-    GroundTruth = tk.Label(canvas, text=f'Nationality: {DataFiltered[0][2]}', font='Helvetica 16', bg='light grey')
-    GroundTruth.place(x=815, y=110)
-    GroundTruth = tk.Label(canvas, text=f'HC Number: {DataFiltered[0][3]}', font='Helvetica 16', bg='light grey')
-    GroundTruth.place(x=815, y=138)
-    GroundTruth = tk.Label(canvas, text=f'Diagnosis: {DataFiltered[0][4]}', font='Helvetica 16', bg='light grey')
-    GroundTruth.place(x=815, y=165)
+    GTruthEntry.config(state="normal")
+    GTruthEntry.delete("1.0", "end")
+    GTruthEntry.insert(INSERT, f'\t   Ground Truth Data \n Gender: {DataFiltered[0][0]}\n'
+                               f' Age: {DataFiltered[0][1]}\n'
+                               f' Nationality: {DataFiltered[0][2]}\n'
+                               f' HC Number: {DataFiltered[0][4]}\n')
+    GTruthEntry.config(state="disabled")
 
 
 def CropImg(ImgPath):
@@ -170,10 +167,39 @@ def CropImg(ImgPath):
         x, y, w, h = cv.boundingRect(c)
         ROI = image[y:y + h, x:x + w]
         break
-    print(ROI.shape)
-    cv.imshow('ROI', ROI)
-    cv.imwrite('ROI222.png', ROI)
+
+    # Place image
+    blue, green, red = cv.split(ROI)
+    img = cv.merge((red, green, blue))
+    im = Image.fromarray(img)
+    im = im.resize((250, 240))  # new width & height
+    imgtk = ImageTk.PhotoImage(image=im)
+    e1 = tk.Label(canvas)
+    e1.place(x=460, y=50)
+    e1.image = imgtk
+    e1['image'] = imgtk  # garbage collection
+
     cv.waitKey()
+
+
+def SubmitDiagnosis(choice):
+    # Diagnosis Data
+    Diagnos = ''
+    DrDiagnosis = ''
+    if int(DataFiltered[0][3]) < 3:
+        Diagnos = "Diabetic"
+    if int(DataFiltered[0][3]) >= 3:
+        Diagnos = "Normal"
+
+    if choice != 0:
+        if choice == 1:
+            DrDiagnosis = "Diabetic"
+        if choice == 2:
+            DrDiagnosis = "Normal"
+        DsummaryEntry.config(state="normal")
+        DsummaryEntry.delete("1.0", "end")
+        DsummaryEntry.insert(INSERT, f'\n\n   Doctor Diagnosis: {DrDiagnosis}\n \n   Actual Diagnosis: {Diagnos}')
+        DsummaryEntry.config(state="disabled")
 
 
 # =================================CALLING ROOT=================================
