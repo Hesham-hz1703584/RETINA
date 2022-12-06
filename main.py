@@ -17,6 +17,9 @@ df = pd.read_csv('G:/HBKU/Work/TestData.csv', delimiter=';')
 
 # global data
 DataFiltered = np.array(0)
+No_Diagnosis = 0
+NoC_Diagnosis = 0
+NoW_Diagnosis = 0
 
 # ENTRIES
 PhotoEntry = Text(canvas, width=30, height=10, font='Helvetica 16', bg=defaultbg)
@@ -53,23 +56,6 @@ DiagnosisLable.place(x=350, y=15)
 DiagnosisLable = tk.Label(canvas, text='Diagnose:', font='Helvetica 16')
 DiagnosisLable.place(x=26, y=405)
 
-l1 = tk.Label(canvas, text='Diagnosis', font='Helvetica 16', bg='light grey')
-l1.place(x=950, y=215)
-
-l2 = tk.Label(canvas, text='Evaluation', font='Helvetica 16', bg='white')
-l2.place(x=950, y=10)
-
-l2 = tk.Label(canvas, text='Doctor'"'"'s Statistics:', font='Helvetica 16', bg='light grey')
-l2.place(x=815, y=370)
-
-l3 = tk.Label(canvas, text='-  Number of evaluated cases: 5', font='Helvetica 16', bg='light grey')
-l3.place(x=815, y=400)
-
-l4 = tk.Label(canvas, text='-  Number of correct diagnosis: 4', font='Helvetica 16', bg='light grey')
-l4.place(x=815, y=430)
-
-l5 = tk.Label(canvas, text='-  Number of incorrect diagnosis: 1', font='Helvetica 16', bg='light grey')
-l5.place(x=815, y=460)
 # =================================BUTTONS=================================
 # buttons
 
@@ -137,10 +123,10 @@ def GenerateGroundTruth(HcNo):
     # Data Generation and Placement
     GTruthEntry.config(state="normal")
     GTruthEntry.delete("1.0", "end")
-    GTruthEntry.insert(INSERT, f'\t   Ground Truth Data \n Gender: {DataFiltered[0][0]}\n'
-                               f' Age: {DataFiltered[0][1]}\n'
-                               f' Nationality: {DataFiltered[0][2]}\n'
-                               f' HC Number: {DataFiltered[0][4]}\n')
+    GTruthEntry.insert(INSERT, f'\t   Ground Truth Data \n   Gender: {DataFiltered[0][0]}\n'
+                               f'   Age: {DataFiltered[0][1]}\n'
+                               f'   Nationality: {DataFiltered[0][2]}\n'
+                               f'   HC Number: {DataFiltered[0][4]}\n')
     GTruthEntry.config(state="disabled")
 
 
@@ -183,6 +169,10 @@ def CropImg(ImgPath):
 
 
 def SubmitDiagnosis(choice):
+    global No_Diagnosis
+    global NoC_Diagnosis
+    global NoW_Diagnosis
+
     # Diagnosis Data
     Diagnos = ''
     DrDiagnosis = ''
@@ -198,9 +188,26 @@ def SubmitDiagnosis(choice):
             DrDiagnosis = "Normal"
         DsummaryEntry.config(state="normal")
         DsummaryEntry.delete("1.0", "end")
-        DsummaryEntry.insert(INSERT, f'\n\n   Doctor Diagnosis: {DrDiagnosis}\n \n   Actual Diagnosis: {Diagnos}')
+        DsummaryEntry.insert(INSERT,
+                             f'\t         Evaluation\n\n   Doctor Diagnosis: {DrDiagnosis}\n   Actual Diagnosis: {Diagnos}')
         DsummaryEntry.config(state="disabled")
 
+    No_Diagnosis += 1
+    if Diagnos == DrDiagnosis:
+        NoC_Diagnosis += 1
+    else:
+        NoW_Diagnosis += 1
+
+    # Diagnosis info
+    StatisticsEntry.config(state="normal")
+    StatisticsEntry.delete("1.0", "end")
+    StatisticsEntry.insert(INSERT, f'\t   Doctors Statistics\n\n' f'    Number of evaluated cases: {No_Diagnosis}\n'
+                                   f'    Number of correct diagnosis: {NoC_Diagnosis}\n'
+                                   f'    Number of incorrect diagnosis: {NoW_Diagnosis}')
+    StatisticsEntry.config(state="disabled")
+
+
+# l2 = tk.Label(canvas, text='Doctor'"'"'s Statistics:', font='Helvetica 16', bg='light grey')
 
 # =================================CALLING ROOT=================================
 root.mainloop()
