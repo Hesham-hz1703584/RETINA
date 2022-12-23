@@ -1,10 +1,16 @@
 import tkinter as tk
+
+import cv2
 import pandas as pd
 import numpy as np
 import cv2 as cv
 from tkinter import *
 from tkinter import filedialog, Text
 from PIL import Image, ImageTk
+import torch
+from torchvision import transforms
+import torch.nn.functional as F
+from fpdf import FPDF
 
 # =================================MAIN=================================
 # Main Window Layout
@@ -20,6 +26,8 @@ DataFiltered = np.array(0)
 No_Diagnosis = 0
 NoC_Diagnosis = 0
 NoW_Diagnosis = 0
+Reports = []
+# reports_No = 0
 
 # ENTRIES
 PhotoEntry = Text(canvas, width=30, height=10, font='Helvetica 16', bg=defaultbg)
@@ -47,7 +55,7 @@ DiagnosisEntry.place(x=20, y=400)
 DiagnosisEntry.config(state="disabled")
 
 CommentsEntry = Text(canvas, width=35, height=6, font='Helvetica 16', bg='light grey', borderwidth=2, border=2)
-CommentsEntry.place(x=170, y=440)
+CommentsEntry.place(x=180, y=440)
 CommentsEntry.insert(INSERT, "Doctor's Comments:")
 # labels
 DiagnosisLable = tk.Label(canvas, text='Diagnosis', font='Helvetica 16', bg='white')
@@ -68,19 +76,22 @@ Uploadbtn.place(x=140, y=315)
 Cropbtn = tk.Button(canvas, text='Crop', font=('Helvetica 16', 15), command=lambda: CropImg(ImgPath), bg='#6495ED',
                     fg='white', width=10, height=2)
 Cropbtn.place(x=525, y=315)
-SDbtn = tk.Button(canvas, text='SubmitDiagnosis', font=('Helvetica 16', 12), command=lambda: SubmitDiagnosis(var.get()),
+SDbtn = tk.Button(canvas, text='SubmitDiagnosis', font=('Helvetica 16', 12),
+                  command=lambda: SubmitDiagnosis(var.get(), ImgPath),
                   bg='#6495ED',
                   fg='white', width=13, height=3)
 SDbtn.place(x=620, y=440)
-DRbtn = tk.Button(canvas, text='DiagnosisReport', font=('Helvetica 16', 12), bg='#6495ED', fg='white', width=13,
+DRbtn = tk.Button(canvas, text='DiagnosisReport', font=('Helvetica 16', 12), bg='#6495ED',
+                  fg='white', width=13,
                   height=3)
 DRbtn.place(x=620, y=520)
-PDFbtn = tk.Button(canvas, text='Generate PDF', font=('Helvetica 16', 12), bg='#6495ED', fg='white', width=13, height=3)
+PDFbtn = tk.Button(canvas, text='Generate PDF', command=lambda: GeneratePdf(Reports), font=('Helvetica 16', 12),
+                   bg='#6495ED', fg='white', width=13, height=3)
 PDFbtn.place(x=1100, y=530)
 # =================================Radiobutton=================================
 var = IntVar()
-Radiobutton(root, text="DIABETIC", font=('Helvetica 16', 15), variable=var, value=1).place(x=35, y=450)
-Radiobutton(root, text="NORMAL", font=('Helvetica 16', 15), variable=var, value=2).place(x=35, y=480)
+Radiobutton(root, text="Diabetic", font=('Helvetica 16', 15), variable=var, value=1).place(x=35, y=450)
+Radiobutton(root, text="Non-Diabetic", font=('Helvetica 16', 15), variable=var, value=2).place(x=35, y=480)
 
 
 # =================================FUNCTIONS=================================
@@ -168,35 +179,77 @@ def CropImg(ImgPath):
     cv.waitKey()
 
 
-def SubmitDiagnosis(choice):
+def SubmitDiagnosis(choice, ImgPath):
     global No_Diagnosis
     global NoC_Diagnosis
     global NoW_Diagnosis
-
+    global Reports
+    global reports_No
     # Diagnosis Data
     Diagnos = ''
+    Diagnoslabel = ''
+    label = ''
+    report = []
     DrDiagnosis = ''
     if int(DataFiltered[0][3]) < 3:
-        Diagnos = "Diabetic"
+        Diagnos = "Actual Diagnosis: Diabetic"
+        Diagnoslabel = "Diabetic"
     if int(DataFiltered[0][3]) >= 3:
-        Diagnos = "Normal"
+        Diagnos = "Actual Diagnosis: Non-Diabetic"
+        Diagnoslabel = "Non-Diabetic"
 
     if choice != 0:
         if choice == 1:
-            DrDiagnosis = "Diabetic"
+            label = 'Diabetic'
+            DrDiagnosis = "Doctor Diagnosis: Diabetic"
         if choice == 2:
-            DrDiagnosis = "Normal"
-        DsummaryEntry.config(state="normal")
-        DsummaryEntry.delete("1.0", "end")
-        DsummaryEntry.insert(INSERT,
-                             f'\t         Evaluation\n\n   Doctor Diagnosis: {DrDiagnosis}\n   Actual Diagnosis: {Diagnos}')
-        DsummaryEntry.config(state="disabled")
+            label = 'Non-Diabetic'
+            DrDiagnosis = "Doctor Diagnosis: Non-Diabetic"
 
     No_Diagnosis += 1
-    if Diagnos == DrDiagnosis:
+    if label == Diagnoslabel:
         NoC_Diagnosis += 1
     else:
         NoW_Diagnosis += 1
+
+    print(choice)
+
+    # Model Implementation ================================================================================
+    # PATH to model
+    PATH = "newmmodel.pt"
+    # load model
+    model = torch.jit.load(PATH)
+    # load image in RGB mode (png files contains additional alpha channel)
+    # img = Image.open("HBK000175000001_Retinal_Left_1-1.jpg").convert('RGB')
+    img = cv2.imread(ImgPath)
+    # set up transformation to resize the image
+    resize = transforms.Resize([224, 224])
+    to_tensor = transforms.ToTensor()
+
+    # apply transformation and convert to Pytorch tensor
+    tensor = to_tensor(img)
+    # torch.Size([3, 224, 224])
+
+    # add another dimension at the front to get NCHW shape
+    tensor = tensor.unsqueeze(0)
+    print('size of input:', tensor.size())
+
+    # get prediciton
+    # output =
+    output = F.softmax(model(tensor), dim=1)
+    print('Probabilities: ', output)
+    print('#################################')
+    x = output
+    y = x.cpu().detach().numpy()
+    confidence = y[0][0] * 100 // 1
+    print('Confidence: ', confidence)
+
+    # get label
+    if torch.argmax(output) == 0:
+        label = f'Model Prediction: Non Diabetic ({confidence}%)'
+    else:
+        label = f'Model Prediction: Diabetic ({confidence}%)'
+    print(label)
 
     # Diagnosis info
     StatisticsEntry.config(state="normal")
@@ -206,8 +259,49 @@ def SubmitDiagnosis(choice):
                                    f'    Number of incorrect diagnosis: {NoW_Diagnosis}')
     StatisticsEntry.config(state="disabled")
 
+    DsummaryEntry.config(state="normal")
+    DsummaryEntry.delete("1.0", "end")
+    DsummaryEntry.insert(INSERT,
+                         f'\t         Evaluation\n\n   {DrDiagnosis}\n   {Diagnos}\n   {label}')
+    DsummaryEntry.config(state="disabled")
+    report = [DrDiagnosis, Diagnos, label]
+    print(report)
+    Reports.append(report)
+    print(Reports)
 
-# l2 = tk.Label(canvas, text='Doctor'"'"'s Statistics:', font='Helvetica 16', bg='light grey')
+
+def GeneratePdf(Reports):
+    print(len(Reports))
+    pdf = FPDF('p', 'mm', 'A4')
+    pdf.add_page()
+    pdf.set_font('helvetica', '', 16)
+    pdf.set_xy(80, 10)
+    pdf.cell(w=30, h=20, txt="DOCTOR'S REPORT")
+    readReports(Reports, pdf)
+    pdf.output('pdf_1.pdf')
+
+
+def readReports(Reports, pdf):
+    y = 40
+    for i in range(0, len(Reports)):
+        pdf.set_xy(10, y)
+        pdf.cell(w=20, h=5, txt=Reports[i][0])
+        y = y + 10
+        print(y)
+        pdf.set_xy(10, y)
+        pdf.cell(w=20, h=5, txt=Reports[i][1])
+        y = y + 10
+        print(y)
+        pdf.set_xy(10, y)
+        pdf.cell(w=20, h=5, txt=Reports[i][2])
+        y = y + 10
+        print(y)
+        pdf.set_xy(10, y)
+        pdf.cell(w=20, h=5, txt="===========================================")
+        y = y + 10
+        pdf.set_xy(10, y)
+        print(y)
+
 
 # =================================CALLING ROOT=================================
 root.mainloop()
