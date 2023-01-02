@@ -12,7 +12,21 @@ from torchvision import transforms
 import torch.nn.functional as F
 from fpdf import FPDF
 
+
 # =================================MAIN=================================
+
+class PDF(FPDF):
+    def header(self):
+        self.set_font('helvetica', 'B', 20)
+        self.cell(0, 10, 'Doctors Report', border=False, align='C')
+        self.ln(20)
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font('helvetica', 'I', 10)
+        self.cell(0, 10, f'Page {self.page_no()}', border=False, align='C')
+
+
 # Main Window Layout
 root = tk.Tk()
 root.resizable(width=0, height=0)
@@ -272,46 +286,24 @@ def SubmitDiagnosis(choice, ImgPath):
 
 def GeneratePdf(Reports):
     print(len(Reports))
-    pdf = FPDF('p', 'mm', 'A4')
+    pdf = PDF('p', 'mm', 'A4')
     pdf.add_page()
-    pdf.set_auto_page_break(auto= True, margin= 15)
+    pdf.alias_nb_pages()
+    pdf.set_auto_page_break(auto=True, margin=20)
     pdf.set_font('helvetica', '', 16)
-    pdf.set_xy(80, 10)
-    pdf.cell(w=30, h=20, txt="DOCTOR'S REPORT")
     readReports(Reports, pdf)
-    #testPdf(pdf)
     pdf.output('pdf_1.pdf')
 
 
 def readReports(Reports, pdf):
-    y = 40
+    textarr = []
     for i in range(0, len(Reports)):
-        pdf.set_xy(10, y)
-        pdf.cell(w=20, h=5, txt=Reports[i][0])
-        y = y + 10
-        print(y)
-        pdf.set_xy(10, y)
-        pdf.cell(w=20, h=5, txt=Reports[i][1])
-        y = y + 10
-        print(y)
-        pdf.set_xy(10, y)
-        pdf.cell(w=20, h=5, txt=Reports[i][2])
-        y = y + 10
-        print(y)
-        pdf.set_xy(10, y)
-        pdf.cell(w=20, h=5, txt="===========================================")
-        y = y + 10
-        pdf.set_xy(10, y)
-        print(y)
+        text = f'\nCase:{i + 1}' + "\n\n" + Reports[i][0] + "\n\n" + Reports[i][1] + "\n\n" + Reports[i][2] + "\n"
+        textarr.append(text)
         continue
+    for y in range(0, len(textarr)):
+        pdf.multi_cell(0, 5, textarr[y] + '\n', 1)
 
-
-def testPdf(pdf):
-    for i in range(1, 41):
-        pdf.set_xy(10, 40)
-        pdf.cell(0, 10, f'this is line {i}', ln = 1)
-        pdf.cell(w=20, h=5, txt="===========================================")
-        pdf.set_xy(10, 50)
 
 # =================================CALLING ROOT=================================
 root.mainloop()
