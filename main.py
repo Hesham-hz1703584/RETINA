@@ -274,10 +274,12 @@ def GeneratePdf(Reports):
     print(len(Reports))
     pdf = FPDF('p', 'mm', 'A4')
     pdf.add_page()
+    pdf.set_auto_page_break(auto= True, margin= 15)
     pdf.set_font('helvetica', '', 16)
     pdf.set_xy(80, 10)
     pdf.cell(w=30, h=20, txt="DOCTOR'S REPORT")
     readReports(Reports, pdf)
+    #testPdf(pdf)
     pdf.output('pdf_1.pdf')
 
 
@@ -301,7 +303,15 @@ def readReports(Reports, pdf):
         y = y + 10
         pdf.set_xy(10, y)
         print(y)
+        continue
 
+
+def testPdf(pdf):
+    for i in range(1, 41):
+        pdf.set_xy(10, 40)
+        pdf.cell(0, 10, f'this is line {i}', ln = 1)
+        pdf.cell(w=20, h=5, txt="===========================================")
+        pdf.set_xy(10, 50)
 
 # =================================CALLING ROOT=================================
 root.mainloop()
