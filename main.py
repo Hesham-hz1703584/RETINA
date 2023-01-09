@@ -11,6 +11,7 @@ import torch
 from torchvision import transforms
 import torch.nn.functional as F
 from fpdf import FPDF
+from tabulate import tabulate
 
 
 # =================================MAIN=================================
@@ -18,7 +19,7 @@ from fpdf import FPDF
 class PDF(FPDF):
     def header(self):
         self.set_font('helvetica', 'B', 20)
-        self.cell(0, 10, 'Doctors Report', border=False, align='C')
+        self.cell(0, 10, 'Diagnosis Report', border=False, align='C')
         self.ln(20)
 
     def footer(self):
@@ -60,7 +61,7 @@ DsummaryEntry = Text(canvas, width=35, height=6, font='Helvetica 16', bg='light 
 DsummaryEntry.place(x=800, y=205)
 DsummaryEntry.config(state="disabled")
 
-StatisticsEntry = Text(canvas, width=35, height=6, font='Helvetica 16', bg='light grey')
+StatisticsEntry = Text(canvas, width=52, height=10, bg='white')
 StatisticsEntry.place(x=800, y=360)
 StatisticsEntry.config(state="disabled")
 
@@ -90,18 +91,15 @@ Uploadbtn.place(x=140, y=315)
 Cropbtn = tk.Button(canvas, text='Crop', font=('Helvetica 16', 15), command=lambda: CropImg(ImgPath), bg='#6495ED',
                     fg='white', width=10, height=2)
 Cropbtn.place(x=525, y=315)
-SDbtn = tk.Button(canvas, text='SubmitDiagnosis', font=('Helvetica 16', 12),
+SDbtn = tk.Button(canvas, text='Submit', font=('Helvetica 16', 12),
                   command=lambda: SubmitDiagnosis(var.get(), ImgPath),
                   bg='#6495ED',
                   fg='white', width=13, height=3)
-SDbtn.place(x=620, y=440)
-DRbtn = tk.Button(canvas, text='DiagnosisReport', font=('Helvetica 16', 12), bg='#6495ED',
-                  fg='white', width=13,
-                  height=3)
-DRbtn.place(x=620, y=520)
+SDbtn.place(x=620, y=470)
+
 PDFbtn = tk.Button(canvas, text='Generate PDF', command=lambda: GeneratePdf(Reports), font=('Helvetica 16', 12),
                    bg='#6495ED', fg='white', width=13, height=3)
-PDFbtn.place(x=1100, y=530)
+PDFbtn.place(x=950, y=530)
 # =================================Radiobutton=================================
 var = IntVar()
 Radiobutton(root, text="Diabetic", font=('Helvetica 16', 15), variable=var, value=1).place(x=35, y=450)
@@ -203,7 +201,7 @@ def SubmitDiagnosis(choice, ImgPath):
     Diagnos = ''
     Diagnoslabel = ''
     label = ''
-    report = []
+    col_names = ["","Doctor","Model"]
     DrDiagnosis = ''
     if int(DataFiltered[0][3]) < 3:
         Diagnos = "Actual Diagnosis: Diabetic"
@@ -228,7 +226,7 @@ def SubmitDiagnosis(choice, ImgPath):
 
     print(choice)
 
-    # Model Implementation ================================================================================
+    # ============================================= Model Implementation ==================================================
     # PATH to model
     PATH = "newmmodel.pt"
     # load model
@@ -268,9 +266,16 @@ def SubmitDiagnosis(choice, ImgPath):
     # Diagnosis info
     StatisticsEntry.config(state="normal")
     StatisticsEntry.delete("1.0", "end")
-    StatisticsEntry.insert(INSERT, f'\t   Doctors Statistics\n\n' f'    Number of evaluated cases: {No_Diagnosis}\n'
-                                   f'    Number of correct diagnosis: {NoC_Diagnosis}\n'
-                                   f'    Number of incorrect diagnosis: {NoW_Diagnosis}')
+    table = [["","Correct","Incorrect"],["Total ",No_Diagnosis,0], ["Correct", NoC_Diagnosis,0],["Incorrect", NoW_Diagnosis,0]]
+    e = ''
+    for i in range(4):
+        for j in range(3):
+            e = Entry(StatisticsEntry, width=9 ,justify = CENTER,relief = "solid", fg= "black",font=('Arial', 20, 'bold'))
+            e.grid(row=i, column=j)
+            e.insert(END, table[i][j])
+            e.config(state="disabled")
+
+    StatisticsEntry.insert(INSERT ,e)
     StatisticsEntry.config(state="disabled")
 
     DsummaryEntry.config(state="normal")
@@ -281,8 +286,10 @@ def SubmitDiagnosis(choice, ImgPath):
     report = [DrDiagnosis, Diagnos, label]
     print(report)
     Reports.append(report)
+    print(tabulate(table, col_names, tablefmt="fancy_grid"))
     print(Reports)
 
+# ============================================= End of Model Implementation ===========================================
 
 def GeneratePdf(Reports):
     print(len(Reports))
